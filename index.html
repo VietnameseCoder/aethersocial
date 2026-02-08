@@ -1,355 +1,686 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ThumbsUp, 
-  MessageSquare, 
-  Share2, 
-  MoreHorizontal, 
-  Bell, 
-  Search, 
-  Menu, 
-  Check,
-  X
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamTube - AETHER’s INTRODUCTION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: white;
+            font-family: Roboto, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f0f0f; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #717171; 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0; 
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background-color: #000;
+        }
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* Animation for interactions */
+        .btn-click {
+            transform: scale(0.95);
+            transition: transform 0.1s;
+        }
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px; 
+            background-color: #333; 
+            color: #fff; 
+            text-align: center; 
+            border-radius: 8px; 
+            padding: 16px; 
+            position: fixed; 
+            z-index: 100; 
+            left: 50%; 
+            bottom: 30px; 
+            transform: translateX(-50%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body>
 
-const App = () => {
-  const [liked, setLiked] = useState(false);
-  const [subscribed, setSubscribed] = useState(false);
-  const [likeCount, setLikeCount] = useState(125432);
-  const [commentText, setCommentText] = useState('');
-  const [showShareTooltip, setShowShareTooltip] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  
-  // Aether Logo URL
-  const aetherLogo = "https://files.catbox.moe/nj82iu.png";
+    <!-- Toast Notification -->
+    <div id="toast">Action Completed</div>
 
-  const videoData = {
-    title: "AETHER’s INTRODUCTION: Taking Over Vietnam By Van 🚐🇻🇳",
-    views: "4,203,912",
-    date: "Feb 2, 2026",
-    description: "Breaking news: All flights to Vietnam are sold out! Join the Aether team as we explore the unique culture, traditions, and landscapes of Vietnam in our trusty van.\n\nFrom Tam Coc to the bustling streets, we're redefining what it means to travel. We encountered amazing people, tasted incredible food, and learned that the journey is just as important as the destination.\n\nSpecial thanks to our local guides and the amazing communities that welcomed us.\n\n#AetherTravel #Vietnam #VanLife #TravelVlog #Culture #Adventure",
-    channel: "Aether Official",
-    subscribers: "980K"
-  };
-
-  const [comments, setComments] = useState([
-    { id: 1, user: "TravelJunkie99", avatar: "bg-purple-500", text: "Can't believe they actually drove a van through the whole country! The dedication is insane. 🚐🇻🇳", likes: "12K", time: "2 hours ago" },
-    { id: 2, user: "CinematicVisions", avatar: "bg-blue-500", text: "The color grading on this is next level. That shot of Tam Coc took my breath away. 📸✨", likes: "8.5K", time: "5 hours ago" },
-    { id: 3, user: "FoodieExplorer", avatar: "bg-green-500", text: "Okay, but can we talk about that food montage? I'm literally drooling. 🍜🤤", likes: "5.2K", time: "1 day ago" },
-    { id: 4, user: "TechNomad", avatar: "bg-red-500", text: "Wait, did the CEO just approve the van at the end? 😂 Love the energy of this team!", likes: "3.1K", time: "1 day ago" },
-    { id: 5, user: "Wanderlust_Annie", avatar: "bg-yellow-500", text: "Vietnam is officially on my bucket list now. Thanks Aether for showing the hidden gems! 🌏", likes: "2.9K", time: "2 days ago" },
-    { id: 6, user: "LocalGuideHN", avatar: "bg-indigo-500", text: "So happy to see you sharing our culture with the world! The ao dai looks beautiful. 🇻🇳❤️", likes: "15K", time: "3 days ago" },
-  ]);
-
-  const handleLike = () => {
-    if (liked) {
-      setLikeCount(prev => prev - 1);
-    } else {
-      setLikeCount(prev => prev + 1);
-    }
-    setLiked(!liked);
-  };
-
-  const handleSubscribe = () => {
-    setSubscribed(!subscribed);
-  };
-
-  const handleShare = () => {
-    navigator.clipboard.writeText("https://www.youtube.com/watch?v=_3hyK1OmK0I");
-    setShowShareTooltip(true);
-    setTimeout(() => setShowShareTooltip(false), 2000);
-  };
-
-  const handleCommentSubmit = (e) => {
-    e.preventDefault();
-    if (!commentText.trim()) return;
-    
-    const newComment = {
-      id: Date.now(),
-      user: "You",
-      avatar: "bg-gray-400",
-      text: commentText,
-      likes: "0",
-      time: "Just now"
-    };
-    
-    setComments([newComment, ...comments]);
-    setCommentText('');
-  };
-
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(num);
-  };
-
-  return (
-    <div className="bg-[#0f0f0f] text-white min-h-screen font-sans flex flex-col">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 h-14 bg-[#0f0f0f] flex items-center justify-between px-4 z-50 border-b border-gray-800">
-        <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-gray-800 rounded-full">
-            <Menu size={24} />
-          </button>
-          <div className="flex items-center gap-2 cursor-pointer">
-            <img src={aetherLogo} alt="Aether Logo" className="w-8 h-8 rounded-full object-cover" />
-            <span className="text-xl font-bold tracking-tight hidden md:block">Aether</span>
-          </div>
+    <!-- Sidebar Overlay (Hidden by default) -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebar" class="fixed top-14 left-0 bottom-0 w-60 bg-[#0f0f0f] z-50 transform -translate-x-full transition-transform duration-300 overflow-y-auto p-3 border-r border-[#303030]">
+        <div class="space-y-2">
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-house text-lg w-6"></i> Home</button>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-compass text-lg w-6"></i> Shorts</button>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-play-circle text-lg w-6"></i> Subscriptions</button>
+            <div class="border-t border-[#303030] my-2"></div>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-clock-rotate-left text-lg w-6"></i> History</button>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-list-ul text-lg w-6"></i> Playlists</button>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-video text-lg w-6"></i> Your Videos</button>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-clock text-lg w-6"></i> Watch Later</button>
+            <button class="w-full flex items-center gap-4 px-3 py-2 hover:bg-[#272727] rounded-lg text-sm"><i class="fa-solid fa-thumbs-up text-lg w-6"></i> Liked Videos</button>
         </div>
+    </div>
 
-        <div className="hidden sm:flex flex-1 max-w-2xl mx-4">
-          <div className="flex w-full">
-            <input 
-              type="text" 
-              placeholder="Search Aether..." 
-              className="w-full bg-[#121212] border border-gray-700 rounded-l-full py-2 px-4 focus:outline-none focus:border-blue-500 text-gray-300"
-            />
-            <button className="bg-[#222] border border-l-0 border-gray-700 rounded-r-full px-5 hover:bg-gray-700 text-gray-400">
-              <Search size={20} />
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 flex items-center justify-center z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-70" onclick="toggleShare()"></div>
+        <div class="bg-[#212121] p-6 rounded-xl w-[90%] max-w-md relative z-10 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Share</h3>
+                <button onclick="toggleShare()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex gap-4 justify-center mb-6 overflow-x-auto py-2">
+                <button class="flex flex-col items-center gap-2 min-w-[60px]" onclick="showToast('Shared to WhatsApp')">
+                    <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-2xl"><i class="fa-brands fa-whatsapp"></i></div>
+                    <span class="text-xs">WhatsApp</span>
+                </button>
+                <button class="flex flex-col items-center gap-2 min-w-[60px]" onclick="showToast('Shared to Facebook')">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-2xl"><i class="fa-brands fa-facebook-f"></i></div>
+                    <span class="text-xs">Facebook</span>
+                </button>
+                <button class="flex flex-col items-center gap-2 min-w-[60px]" onclick="showToast('Shared to X')">
+                    <div class="w-12 h-12 rounded-full bg-black border border-gray-600 flex items-center justify-center text-xl"><i class="fa-brands fa-x-twitter"></i></div>
+                    <span class="text-xs">X</span>
+                </button>
+                <button class="flex flex-col items-center gap-2 min-w-[60px]" onclick="showToast('Shared via Email')">
+                    <div class="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center text-xl"><i class="fa-solid fa-envelope"></i></div>
+                    <span class="text-xs">Email</span>
+                </button>
+            </div>
+            <div class="bg-[#181818] border border-[#303030] rounded-lg p-2 flex items-center justify-between">
+                <input type="text" value="https://streamtube.com/watch?v=_3hyK1OmK0I" readonly class="bg-transparent text-sm w-full outline-none text-gray-400">
+                <button class="bg-blue-500 text-black text-sm font-medium px-3 py-1.5 rounded-full hover:bg-blue-400" onclick="copyLink()">Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 h-14 bg-[#0f0f0f] flex items-center justify-between px-4 z-50 border-b border-[#272727]">
+        <!-- Left: Menu & Logo -->
+        <div class="flex items-center gap-4">
+            <button class="p-2 hover:bg-[#272727] rounded-full w-10 h-10 flex items-center justify-center" onclick="toggleSidebar()">
+                <i class="fa-solid fa-bars text-xl"></i>
             </button>
-          </div>
+            <div class="flex items-center gap-1 cursor-pointer" onclick="window.location.reload()">
+                <div class="bg-red-600 text-white p-1 rounded-lg">
+                    <i class="fa-brands fa-youtube text-xl"></i>
+                </div>
+                <span class="text-xl font-bold tracking-tighter">StreamTube</span>
+            </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="p-2 hover:bg-gray-800 rounded-full text-gray-300 relative">
-            <Bell size={24} />
-            <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 rounded-full text-[10px] flex items-center justify-center text-white border-2 border-[#0f0f0f]">9+</span>
-          </button>
-          <div className="w-8 h-8 bg-gray-600 rounded-full cursor-pointer overflow-hidden border border-gray-700">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" />
-          </div>
+        <!-- Center: Search -->
+        <div class="hidden md:flex items-center w-1/2 max-w-[600px]">
+            <div class="flex w-full">
+                <input type="text" id="searchInput" placeholder="Search" class="w-full bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2 focus:outline-none focus:border-blue-500 shadow-inner text-gray-200" onkeypress="handleSearch(event)">
+                <button class="bg-[#222222] border border-l-0 border-[#303030] px-5 rounded-r-full hover:bg-[#272727]" onclick="showToast('Search functionality simulated')">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                </button>
+            </div>
+            <button class="ml-4 p-2 bg-[#181818] hover:bg-[#272727] rounded-full w-10 h-10 flex items-center justify-center" onclick="startVoiceSearch()">
+                <i class="fa-solid fa-microphone" id="micIcon"></i>
+            </button>
         </div>
-      </nav>
 
-      <div className="flex pt-14 h-[calc(100vh-56px)] justify-center">
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-[#0f0f0f] max-w-[1600px]">
-          <div className="flex flex-col lg:flex-row gap-6">
+        <!-- Right: Icons & Profile -->
+        <div class="flex items-center gap-3">
+            <button class="hidden sm:block p-2 hover:bg-[#272727] rounded-full w-10 h-10" onclick="showToast('Create video clicked')"><i class="fa-solid fa-video"></i></button>
+            <button class="hidden sm:block p-2 hover:bg-[#272727] rounded-full w-10 h-10 relative" onclick="toggleNotifications()">
+                <i class="fa-regular fa-bell"></i>
+                <span class="absolute top-1 right-1 bg-red-600 text-white text-[10px] font-bold px-1 rounded-full">9+</span>
+            </button>
+            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-sm font-bold cursor-pointer hover:opacity-90" onclick="showToast('Opening Profile...')">U</div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-16 px-4 md:px-6 lg:px-12 max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Video & Comments -->
+        <div class="lg:col-span-2">
             
-            {/* Left Column: Video & Comments */}
-            <div className="flex-1">
-              {/* Video Player Wrapper */}
-              <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-purple-900/10 mb-4 group">
-                 <video 
-                  className="w-full h-full object-contain"
-                  src="https://files.catbox.moe/xv8sgh.mp4" 
-                  controls
-                  autoPlay
-                ></video>
-              </div>
-
-              {/* Video Title */}
-              <h1 className="text-xl md:text-2xl font-bold mb-2 line-clamp-2">{videoData.title}</h1>
-
-              {/* Action Bar */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <img src={aetherLogo} alt={videoData.channel} className="w-10 h-10 rounded-full object-cover cursor-pointer hover:scale-105 transition-transform" />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-white hover:text-gray-300 cursor-pointer">{videoData.channel}</span>
-                    <span className="text-xs text-gray-400">{videoData.subscribers} subscribers</span>
-                  </div>
-                  <button 
-                    onClick={handleSubscribe}
-                    className={`ml-4 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                      subscribed 
-                        ? "bg-[#272727] text-gray-300 border border-gray-700 hover:bg-[#3f3f3f]" 
-                        : "bg-white text-black hover:bg-gray-200"
-                    }`}
-                  >
-                    {subscribed ? <span className="flex items-center gap-2"><Check size={16}/> Subscribed</span> : "Subscribe"}
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-                  <div className="flex items-center bg-[#272727] rounded-full">
-                    <button 
-                      onClick={handleLike}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-l-full hover:bg-[#3f3f3f] border-r border-gray-600 transition-colors ${liked ? "text-blue-400" : "text-white"}`}
-                    >
-                      <ThumbsUp size={20} className={liked ? "fill-current" : ""} />
-                      <span className="text-sm font-medium">{formatNumber(likeCount)}</span>
-                    </button>
-                    <button className="px-4 py-2 rounded-r-full hover:bg-[#3f3f3f] text-white">
-                      <div className="rotate-180"><ThumbsUp size={20} /></div>
-                    </button>
-                  </div>
-                  
-                  <div className="relative">
-                    <button 
-                      onClick={handleShare}
-                      className="flex items-center gap-2 bg-[#272727] px-4 py-2 rounded-full hover:bg-[#3f3f3f] text-white transition-colors"
-                    >
-                      <Share2 size={20} />
-                      <span className="text-sm font-medium">Share</span>
-                    </button>
-                    {showShareTooltip && (
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-black text-white text-xs px-2 py-1 rounded opacity-90 transition-opacity">
-                        Copied!
-                      </div>
-                    )}
-                  </div>
-
-                  <button className="flex items-center gap-2 bg-[#272727] px-3 py-2 rounded-full hover:bg-[#3f3f3f] text-white">
-                    <MoreHorizontal size={20} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Description Box */}
-              <div 
-                className={`bg-[#272727] rounded-xl p-3 text-sm mb-6 transition-all duration-200 cursor-pointer ${isDescriptionExpanded ? '' : 'hover:bg-[#3f3f3f]'}`}
-                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-              >
-                <div className="flex gap-2 font-semibold mb-1">
-                  <span>{videoData.views} views</span>
-                  <span>•</span>
-                  <span>{videoData.date}</span>
-                </div>
-                <div className="relative">
-                  <p className={`text-gray-200 whitespace-pre-line ${isDescriptionExpanded ? '' : 'line-clamp-2'}`}>
-                    {videoData.description}
-                  </p>
-                  <span className={`text-gray-400 font-semibold mt-1 ${isDescriptionExpanded ? 'block pt-2' : 'block'}`}>
-                    {isDescriptionExpanded ? 'Show less' : '...more'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Comments Section */}
-              <div className="mb-8">
-                <div className="flex items-center gap-6 mb-6">
-                  <h3 className="text-xl font-bold">8,432 Comments</h3>
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-400 cursor-pointer">
-                    <div className="w-5 h-5"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"></path></svg></div>
-                    Sort by
-                  </div>
-                </div>
-
-                {/* Add Comment */}
-                <div className="flex gap-4 mb-8">
-                  <div className="w-10 h-10 rounded-full bg-gray-600 flex-shrink-0">
-                     <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="rounded-full" />
-                  </div>
-                  <form onSubmit={handleCommentSubmit} className="flex-1">
-                    <input 
-                      type="text" 
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="w-full bg-transparent border-b border-gray-700 pb-1 focus:border-white focus:outline-none transition-colors text-sm"
-                    />
-                    <div className="flex justify-end mt-2 gap-2">
-                      <button type="button" onClick={() => setCommentText('')} className="px-3 py-2 text-sm font-medium hover:bg-[#3f3f3f] rounded-full">Cancel</button>
-                      <button 
-                        type="submit" 
-                        disabled={!commentText.trim()}
-                        className={`px-3 py-2 text-sm font-medium rounded-full ${commentText.trim() ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-[#272727] text-gray-500"}`}
-                      >
-                        Comment
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Comment List */}
-                <div className="space-y-6">
-                  {comments.map(comment => (
-                    <div key={comment.id} className="flex gap-4 group">
-                      <div className={`w-10 h-10 rounded-full ${comment.avatar} flex-shrink-0 flex items-center justify-center text-white font-bold text-sm`}>
-                         {comment.user[0]}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="font-semibold text-sm hover:text-gray-300 cursor-pointer">@{comment.user}</span>
-                          <span className="text-xs text-gray-400">{comment.time}</span>
-                        </div>
-                        <p className="text-sm text-gray-200 mb-2">{comment.text}</p>
-                        <div className="flex items-center gap-4 text-xs font-medium text-gray-400">
-                          <button className="flex items-center gap-1 hover:bg-gray-800 p-1.5 -ml-1.5 rounded-full">
-                            <ThumbsUp size={14} /> 
-                            <span>{comment.likes}</span>
-                          </button>
-                          <button className="flex items-center gap-1 hover:bg-gray-800 p-1.5 rounded-full">
-                            <div className="rotate-180"><ThumbsUp size={14} /></div>
-                          </button>
-                          <button className="hover:bg-gray-800 py-1.5 px-3 rounded-full">Reply</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <!-- Video Player -->
+            <div class="video-container shadow-lg group">
+                <video id="mainVideo" controls autoplay poster="https://img.youtube.com/vi/_3hyK1OmK0I/maxresdefault.jpg" class="w-full h-full">
+                    <source src="https://files.catbox.moe/xv8sgh.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
             </div>
 
-            {/* Right Column: Recommendations */}
-            <div className="lg:w-[350px] flex-shrink-0">
-               <h3 className="font-bold text-lg mb-4 hidden lg:block">Up Next</h3>
-               <div className="flex flex-col gap-3">
-                  <RecommendationCard 
-                    title="Behind the Scenes: Aether's Van Design" 
-                    channel="Aether Official" 
-                    views="1.2M views" 
-                    time="1 week ago"
-                    duration="10:05"
-                    image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60"
-                  />
-                  <RecommendationCard 
-                    title="Top 10 Street Foods in Hanoi You MUST Try" 
-                    channel="Foodie Explorer" 
-                    views="890K views" 
-                    time="3 days ago"
-                    duration="14:20"
-                    image="https://images.unsplash.com/photo-1583417319070-4a69db38a482?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60"
-                  />
-                  <RecommendationCard 
-                    title="Cinematic Drone Footage of Ha Long Bay 4K" 
-                    channel="Drone Master" 
-                    views="3.4M views" 
-                    time="1 year ago"
-                    duration="05:30"
-                    image="https://images.unsplash.com/photo-1528127269322-539801943592?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60"
-                  />
-                   <RecommendationCard 
-                    title="Packing for Van Life: Essentials Only" 
-                    channel="Minimalist Travel" 
-                    views="500K views" 
-                    time="2 weeks ago"
-                    duration="08:45"
-                    image="https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60"
-                  />
-                    <RecommendationCard 
-                    title="We Got Lost in the Mountains..." 
-                    channel="Aether Official" 
-                    views="2.1M views" 
-                    time="2 days ago"
-                    duration="18:12"
-                    image="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60"
-                  />
-               </div>
+            <!-- Video Title -->
+            <h1 class="text-xl font-bold mt-4">AETHER’s INTRODUCTION | Full Documentary [4K]</h1>
+
+            <!-- Channel & Actions Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mt-2 pb-4 border-b border-[#303030] gap-4">
+                
+                <!-- Channel Info -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-tr from-orange-500 to-yellow-400 rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer">
+                        A
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base cursor-pointer hover:text-gray-300">Aether <i class="fa-solid fa-circle-check text-gray-400 text-xs ml-1"></i></h3>
+                        <p class="text-gray-400 text-xs">12.5M subscribers</p>
+                    </div>
+                    <button id="subBtn" class="ml-4 bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition-colors" onclick="toggleSubscribe()">
+                        Subscribe
+                    </button>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <div class="flex items-center bg-[#272727] rounded-full">
+                        <button id="likeBtn" class="flex items-center gap-2 px-4 py-2 hover:bg-[#3f3f3f] rounded-l-full border-r border-[#3f3f3f] transition-colors" onclick="handleLike()">
+                            <i class="fa-regular fa-thumbs-up text-lg"></i> <span id="likeCount">3.2M</span>
+                        </button>
+                        <button id="dislikeBtn" class="px-4 py-2 hover:bg-[#3f3f3f] rounded-r-full transition-colors" onclick="handleDislike()">
+                            <i class="fa-regular fa-thumbs-down text-lg"></i>
+                        </button>
+                    </div>
+                    <button class="flex items-center gap-2 bg-[#272727] px-4 py-2 rounded-full hover:bg-[#3f3f3f] font-medium text-sm transition-colors" onclick="toggleShare()">
+                        <i class="fa-solid fa-share"></i> Share
+                    </button>
+                    <button class="flex items-center gap-2 bg-[#272727] px-4 py-2 rounded-full hover:bg-[#3f3f3f] font-medium text-sm transition-colors" onclick="handleDownload()">
+                        <i class="fa-solid fa-download"></i> Download
+                    </button>
+                    <button class="flex items-center justify-center bg-[#272727] w-9 h-9 rounded-full hover:bg-[#3f3f3f] transition-colors" onclick="showToast('More options menu')">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                </div>
             </div>
 
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-};
+            <!-- Description Box -->
+            <div id="descBox" class="bg-[#272727] rounded-xl p-3 mt-4 text-sm hover:bg-[#3f3f3f] cursor-pointer transition-colors group" onclick="toggleDescription()">
+                <div class="font-bold mb-1">24,892,105 views • Premiered Feb 2, 2026</div>
+                <div id="descText" class="line-clamp-2">
+                    <p class="text-white group-hover:text-white">
+                        Breaking news: All flights to Vietnam's major capitals are sold out! People are traveling to experience unique Vietnamese culture popularized by Aether. Spending life in a van, connecting culture by sharing unique traditions through traveling. Welcome to Aether's journey.
+                        <br><br>
+                        This journey has been 5 years in the making. We traveled across 63 provinces, met thousands of amazing people, and discovered the hidden heart of Vietnam.
+                        <br><br>
+                        Special thanks to our sponsors and the incredible community that made this possible.
+                        <br><br>
+                        <span class="text-blue-400">#Aether #Vietnam #VanLife #Travel #Culture #Documentary #Trending</span>
+                    </p>
+                </div>
+                <span id="showMoreBtn" class="font-bold text-white cursor-pointer mt-1 block">...more</span>
+            </div>
 
-// Sub-components for cleaner code
-const RecommendationCard = ({ title, channel, views, time, duration, image }) => (
-  <div className="flex gap-2 cursor-pointer group">
-    <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-800">
-      <img src={image} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
-      <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded font-medium">
-        {duration}
-      </div>
-    </div>
-    <div className="flex flex-col gap-1 pr-4">
-      <h4 className="text-sm font-semibold line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">{title}</h4>
-      <div className="text-xs text-gray-400">
-        <div>{channel}</div>
-        <div>{views} • {time}</div>
-      </div>
-    </div>
-  </div>
-);
+            <!-- Comments Section -->
+            <div class="mt-6">
+                <div class="flex items-center gap-6 mb-6">
+                    <h2 class="text-xl font-bold"><span id="totalCommentCount">142,508</span> Comments</h2>
+                    <div class="flex items-center gap-2 text-sm font-medium cursor-pointer text-gray-300 hover:text-white" onclick="showToast('Sort menu opened')">
+                        <i class="fa-solid fa-arrow-down-short-wide"></i> Sort by
+                    </div>
+                </div>
 
-export default App;
+                <!-- Add Comment Input -->
+                <div class="flex gap-4 mb-8">
+                    <div class="w-10 h-10 bg-purple-600 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold">U</div>
+                    <div class="flex-grow">
+                        <input type="text" id="commentInput" placeholder="Add a comment..." class="w-full bg-transparent border-b border-[#303030] focus:border-white focus:outline-none pb-1 transition-colors text-sm" onfocus="document.getElementById('commentActions').classList.remove('hidden')">
+                        <div id="commentActions" class="flex justify-between items-center mt-2 hidden">
+                            <button class="text-gray-400 hover:text-white text-lg"><i class="fa-regular fa-face-smile"></i></button>
+                            <div class="flex gap-2">
+                                <button class="px-3 py-2 rounded-full hover:bg-[#272727] text-sm font-medium" onclick="cancelComment()">Cancel</button>
+                                <button class="px-3 py-2 bg-blue-500 text-black font-medium rounded-full text-sm hover:bg-blue-400 disabled:bg-[#272727] disabled:text-gray-500" onclick="addComment()">Comment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comments List -->
+                <div id="commentsList" class="space-y-6 pb-10">
+                    <!-- Dynamic comments will be injected here -->
+                </div>
+                
+                <!-- Loading Spinner for Infinite Scroll feel -->
+                <div class="flex justify-center py-4">
+                    <div class="w-8 h-8 border-4 border-[#303030] border-t-blue-500 rounded-full animate-spin"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Sidebar Recommendations -->
+        <div class="lg:col-span-1 pl-0 lg:pl-4 mt-8 lg:mt-0">
+            <!-- Filter Chips -->
+            <div class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-2">
+                <button class="bg-white text-black px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap hover:bg-gray-200 transition-colors" onclick="filterVideos('all')">All</button>
+                <button class="bg-[#272727] hover:bg-[#3f3f3f] px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors" onclick="filterVideos('channel')">From Aether</button>
+                <button class="bg-[#272727] hover:bg-[#3f3f3f] px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors" onclick="filterVideos('related')">Related</button>
+                <button class="bg-[#272727] hover:bg-[#3f3f3f] px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors" onclick="filterVideos('recent')">Recently Uploaded</button>
+            </div>
+
+            <!-- Video List -->
+            <div class="flex flex-col gap-3" id="recommendationList">
+                <!-- Rec Video 1 -->
+                <div class="flex gap-2 cursor-pointer group">
+                    <div class="relative w-40 h-24 rounded-lg bg-gray-800 flex-shrink-0 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1528127269322-539801943592?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" alt="Thumbnail">
+                        <span class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-xs px-1 rounded">12:30</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-blue-400">Street Food Tour in Hanoi 🍜</h4>
+                        <div class="text-xs text-gray-400">Vietnam Eats <i class="fa-solid fa-circle-check text-[10px]"></i></div>
+                        <div class="text-xs text-gray-400">2.4M views • 1 month ago</div>
+                    </div>
+                </div>
+
+                <!-- Rec Video 2 -->
+                <div class="flex gap-2 cursor-pointer group">
+                    <div class="relative w-40 h-24 rounded-lg bg-gray-800 flex-shrink-0 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" alt="Thumbnail">
+                        <span class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-xs px-1 rounded">18:45</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-blue-400">Why Van Life is Harder Than You Think</h4>
+                        <div class="text-xs text-gray-400">Nomad Diaries</div>
+                        <div class="text-xs text-gray-400">5.1M views • 2 years ago</div>
+                    </div>
+                </div>
+
+                <!-- Rec Video 3 -->
+                <div class="flex gap-2 cursor-pointer group">
+                    <div class="relative w-40 h-24 rounded-lg bg-gray-800 flex-shrink-0 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1552083375-1447ce886485?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" alt="Thumbnail">
+                        <span class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-xs px-1 rounded">8:15</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-blue-400">Top 10 Hidden Gems in Vietnam</h4>
+                        <div class="text-xs text-gray-400">Travel Guide</div>
+                        <div class="text-xs text-gray-400">850K views • 3 weeks ago</div>
+                    </div>
+                </div>
+
+                 <!-- Rec Video 4 -->
+                 <div class="flex gap-2 cursor-pointer group">
+                    <div class="relative w-40 h-24 rounded-lg bg-gray-800 flex-shrink-0 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" alt="Thumbnail">
+                        <span class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-xs px-1 rounded">15:20</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-blue-400">Backpacking Southeast Asia: The Budget</h4>
+                        <div class="text-xs text-gray-400">Budget Traveler</div>
+                        <div class="text-xs text-gray-400">1.2M views • 8 months ago</div>
+                    </div>
+                </div>
+                
+                 <!-- Rec Video 5 -->
+                 <div class="flex gap-2 cursor-pointer group">
+                    <div class="relative w-40 h-24 rounded-lg bg-gray-800 flex-shrink-0 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" alt="Thumbnail">
+                        <span class="absolute bottom-1 right-1 bg-black bg-opacity-80 text-xs px-1 rounded">22:05</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm line-clamp-2 leading-tight mb-1 group-hover:text-blue-400">Exploring Cinque Terre, Italy 🇮🇹</h4>
+                        <div class="text-xs text-gray-400">Wanderlust World</div>
+                        <div class="text-xs text-gray-400">3.4M views • 1 year ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        let isSubscribed = false;
+        let likeCount = 3200000;
+        let isLiked = false;
+        let isDisliked = false;
+        let isDescExpanded = false;
+
+        const fakeNames = ["ShadowHunter", "PixelQueen", "NomadLife", "VietnamLover", "TechGeek99", "Sarah J.", "MikeTheBike", "CoffeeAddict", "WanderLust", "CodeMaster", "TravelBug", "SkyWalker", "OceanEyes", "CityLights", "MountainMan"];
+        const fakeComments = [
+            "This is absolutely the best travel documentary I've seen this year! 🔥",
+            "I'm booking my ticket to Vietnam right now. Seriously.",
+            "The production quality is insane! Aether never misses.",
+            "Who else is watching this in 2026? 👇",
+            "Vietnam is such a beautiful country. Love from Brazil! 🇧🇷",
+            "That drone shot at 1:15 was pure magic. How did you even get that?",
+            "Can we appreciate how much effort went into this edit? 👏",
+            "I've been following you since 10k subs, so proud to see you at 12M!",
+            "First time watching your channel and I subscribed immediately.",
+            "The food looks so delicious, I'm getting hungry at 2 AM.",
+            "Finally a video that shows the real culture, not just tourist traps.",
+            "Legendary content as always.",
+            "My dream is to buy a van and travel like this one day.",
+            "Greetings from Germany! 🇩🇪",
+            "Underrated channel? Not anymore! 12.5M well deserved.",
+            "The storytelling is on another level.",
+            "I watched this 3 times already.",
+            "Please visit Japan next! 🇯🇵",
+            "The music choice fits the vibe perfectly.",
+            "Wait, did anyone else notice the cat in the background at 0:45? 😹"
+        ];
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            generateComments(50); // Generate 50 initial comments
+            // Start a subtle view counter update
+            setInterval(() => {
+                const viewCount = document.querySelector('.bg-\\[\\#272727\\] .font-bold');
+                // Just a random chance to 'update' views for realism
+                if(Math.random() > 0.7) {
+                    // Logic to simulate live view count not implemented for text string parsing simplicity
+                    // But effectively simulates a live page
+                }
+            }, 5000);
+        };
+
+        // --- COMMENT GENERATION ---
+        function generateComments(count) {
+            const list = document.getElementById('commentsList');
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                const name = fakeNames[Math.floor(Math.random() * fakeNames.length)];
+                const text = fakeComments[Math.floor(Math.random() * fakeComments.length)];
+                const color = getRandomColor();
+                const likes = Math.floor(Math.random() * 5000) + 12;
+                const time = Math.floor(Math.random() * 23) + 1 + " hours ago";
+                
+                html += `
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-full ${color} flex-shrink-0 flex items-center justify-center font-bold text-white text-lg">${name.charAt(0)}</div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold text-sm bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-400">${name}</span>
+                                <span class="text-xs text-gray-400">${time}</span>
+                            </div>
+                            <p class="text-sm text-gray-200">${text}</p>
+                            <div class="flex items-center gap-4 mt-2">
+                                <button class="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors" onclick="toggleCommentLike(this)">
+                                    <i class="fa-regular fa-thumbs-up text-sm"></i> <span>${formatCount(likes)}</span>
+                                </button>
+                                <button class="text-xs text-gray-400 hover:text-white transition-colors" onclick="toggleCommentDislike(this)">
+                                    <i class="fa-regular fa-thumbs-down text-sm"></i>
+                                </button>
+                                <button class="text-xs font-medium text-gray-400 hover:text-white">Reply</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            list.innerHTML += html;
+        }
+
+        function getRandomColor() {
+            const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // --- INTERACTION HANDLERS ---
+
+        // Sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Subscribe
+        function toggleSubscribe() {
+            const btn = document.getElementById('subBtn');
+            isSubscribed = !isSubscribed;
+            
+            if (isSubscribed) {
+                btn.innerText = 'Subscribed';
+                btn.className = 'ml-4 bg-[#272727] text-white px-4 py-2 rounded-full font-medium hover:bg-[#3f3f3f] transition-colors btn-click';
+                showToast('Subscription added');
+            } else {
+                btn.innerText = 'Subscribe';
+                btn.className = 'ml-4 bg-white text-black px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition-colors btn-click';
+                showToast('Subscription removed');
+            }
+            setTimeout(() => btn.classList.remove('btn-click'), 150);
+        }
+
+        // Like Main Video
+        function handleLike() {
+            const likeBtn = document.getElementById('likeBtn');
+            const icon = likeBtn.querySelector('i');
+            const countSpan = document.getElementById('likeCount');
+
+            if (isLiked) {
+                isLiked = false;
+                likeCount--;
+                icon.className = 'fa-regular fa-thumbs-up text-lg';
+            } else {
+                if (isDisliked) handleDislike(); 
+                isLiked = true;
+                likeCount++;
+                icon.className = 'fa-solid fa-thumbs-up text-lg text-white';
+                showToast('Added to Liked Videos');
+            }
+            countSpan.innerText = formatCount(likeCount);
+        }
+
+        // Dislike Main Video
+        function handleDislike() {
+            const dislikeBtn = document.getElementById('dislikeBtn');
+            const icon = dislikeBtn.querySelector('i');
+
+            if (isDisliked) {
+                isDisliked = false;
+                icon.className = 'fa-regular fa-thumbs-down text-lg';
+            } else {
+                if (isLiked) handleLike();
+                isDisliked = true;
+                icon.className = 'fa-solid fa-thumbs-down text-lg text-white';
+                showToast('Dislike registered');
+            }
+        }
+
+        // Description Toggle
+        function toggleDescription() {
+            const descText = document.getElementById('descText');
+            const btn = document.getElementById('showMoreBtn');
+            
+            if (isDescExpanded) {
+                descText.className = 'line-clamp-2';
+                btn.innerText = '...more';
+            } else {
+                descText.className = '';
+                btn.innerText = 'Show less';
+            }
+            isDescExpanded = !isDescExpanded;
+        }
+
+        // Comment Like/Dislike
+        function toggleCommentLike(btn) {
+            const icon = btn.querySelector('i');
+            if (icon.classList.contains('fa-regular')) {
+                icon.classList.remove('fa-regular');
+                icon.classList.add('fa-solid');
+                btn.classList.add('text-blue-400');
+            } else {
+                icon.classList.add('fa-regular');
+                icon.classList.remove('fa-solid');
+                btn.classList.remove('text-blue-400');
+            }
+        }
+        
+        function toggleCommentDislike(btn) {
+            const icon = btn.querySelector('i');
+            if (icon.classList.contains('fa-regular')) {
+                icon.classList.remove('fa-regular');
+                icon.classList.add('fa-solid');
+                btn.classList.add('text-red-400');
+            } else {
+                icon.classList.add('fa-regular');
+                icon.classList.remove('fa-solid');
+                btn.classList.remove('text-red-400');
+            }
+        }
+
+        // Add Comment
+        function addComment() {
+            const input = document.getElementById('commentInput');
+            const text = input.value.trim();
+            if (text === "") return;
+
+            const list = document.getElementById('commentsList');
+            const newComment = document.createElement('div');
+            newComment.className = 'flex gap-4 animate-fade-in bg-[#1a1a1a] p-3 rounded-lg border border-[#303030] mb-2';
+            newComment.innerHTML = `
+                <div class="w-10 h-10 bg-purple-600 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold">U</div>
+                <div class="flex-grow">
+                     <div class="flex items-center gap-2 mb-1">
+                        <span class="font-bold text-sm">You</span>
+                        <span class="text-xs text-gray-400">Just now</span>
+                    </div>
+                    <p class="text-sm">${escapeHtml(text)}</p>
+                    <div class="flex items-center gap-4 mt-2">
+                        <button class="flex items-center gap-1 text-xs text-gray-400 hover:text-white" onclick="toggleCommentLike(this)"><i class="fa-regular fa-thumbs-up text-sm"></i> 0</button>
+                        <button class="text-xs text-gray-400 hover:text-white" onclick="toggleCommentDislike(this)"><i class="fa-regular fa-thumbs-down text-sm"></i></button>
+                        <button class="text-xs font-medium text-gray-400 hover:text-white">Reply</button>
+                        <button class="text-xs font-medium text-gray-400 hover:text-white" onclick="this.closest('.flex.gap-4').remove()">Delete</button>
+                    </div>
+                </div>
+            `;
+            list.prepend(newComment);
+            input.value = "";
+            cancelComment();
+            showToast('Comment added');
+            
+            // Update huge count
+            const countEl = document.getElementById('totalCommentCount');
+            let current = parseInt(countEl.innerText.replace(/,/g, ''));
+            countEl.innerText = (current + 1).toLocaleString();
+        }
+
+        function cancelComment() {
+            document.getElementById('commentInput').value = '';
+            document.getElementById('commentActions').classList.add('hidden');
+        }
+
+        // Share & Download
+        function toggleShare() {
+            const modal = document.getElementById('shareModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function copyLink() {
+            const input = document.querySelector('#shareModal input');
+            input.select();
+            document.execCommand('copy');
+            showToast('Link copied to clipboard');
+            setTimeout(toggleShare, 500);
+        }
+
+        function handleDownload() {
+            showToast('Premium Required to Download');
+        }
+        
+        function toggleNotifications() {
+             showToast('Notifications settings updated');
+        }
+
+        // Search
+        function handleSearch(e) {
+            if (e.key === 'Enter') {
+                showToast(`Searching for "${e.target.value}"...`);
+            }
+        }
+        
+        function startVoiceSearch() {
+            const icon = document.getElementById('micIcon');
+            icon.classList.add('text-red-500', 'animate-pulse');
+            showToast('Listening...');
+            setTimeout(() => {
+                icon.classList.remove('text-red-500', 'animate-pulse');
+            }, 2000);
+        }
+
+        // Filter Chips
+        function filterVideos(type) {
+            showToast(`Filtering by: ${type}`);
+            const list = document.getElementById('recommendationList');
+            list.style.opacity = '0.5';
+            setTimeout(() => {
+                list.style.opacity = '1';
+            }, 300);
+        }
+
+        // Utilities
+        function formatCount(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+    </script>
+</body>
+</html>
